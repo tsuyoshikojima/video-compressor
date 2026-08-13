@@ -25,7 +25,7 @@ def encode_file_size(file_size: int) -> bytes:
 
 
 def decode_file_size(header: bytes) -> int:
-    """サーバーで受信したヘッダーを整数に戻す"""
+    """サーバーで受信したヘッダーをファイルのサイズ(整数バイト)に変換する"""
 
     if len(header) != HEADER_LENGTH:
         raise ValueError("不正なヘッダーサイズです。")
