@@ -10,6 +10,7 @@ class StatusCode(IntEnum):
     SUCCESS = 0
     INCOMPLETE_UPLOAD = 1
     SERVER_ERROR = 2
+    STORAGE_LIMIT_EXCEEDED = 3
 
 
 def encode_file_size(file_size: int) -> bytes:

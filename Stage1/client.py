@@ -1,6 +1,5 @@
 import os
 import socket
-import sys
 
 
 from protocol import(
@@ -34,7 +33,10 @@ def recv_exact(
 
     return bytes(output)
 
-try:
+
+def prepare_upload() -> tuple[str, bytes]:
+    """file_path, headerを取得して返す"""
+
     while True:
         file_path = input(
             "サーバーにアップロードするmp4ファイルのパスを入力してください。\n"
@@ -55,27 +57,33 @@ try:
             header = encode_file_size(file_size)
         except ValueError:
             print("ファイルのサイズが不正です。")
-            sys.exit(1)
+            continue
 
         break
-except KeyboardInterrupt:
-    print("アプリを終了します。")
 
-try:
+    return file_path, header
+
+
+def run_tcp_client(
+        file_path: str,
+        header: bytes
+) -> None:
+
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
         client_socket.connect(SERVER_ADDRESS)
 
         client_socket.sendall(header)
-
 
         with open(file_path, "rb") as f:
             while True:
                 contents = f.read(CHUNK_SIZE)
 
                 if not contents:
+                    print("データの送信が完了しました。\n")
                     break
 
                 client_socket.sendall(contents)
+                print("データを送信中です....")
 
         data = recv_exact(
             sock=client_socket,
@@ -85,21 +93,39 @@ try:
         status_code = decode_response(data)
 
         if status_code == StatusCode.SUCCESS:
-            print("アップロードが完了しました。")
+            print("サーバーへのアップロードが完了しました。\n")
         elif status_code == StatusCode.INCOMPLETE_UPLOAD:
-            print("アップロードに失敗しました。")
+            print("サーバーへのアップロードに失敗しました。\n")
         elif status_code == StatusCode.SERVER_ERROR:
             print("SERVER ERROR")
+        elif status_code == StatusCode.STORAGE_LIMIT_EXCEEDED:
+            print("サーバー側の容量不足によりアップロード出来ません。\n")
 
-except ConnectionRefusedError:
-    print("サーバーに接続できませんでした。")
 
-except ConnectionError as e:
-    print(f"通信エラー: {e}")
+def main() -> None:
 
-except OSError as e:
-    print(f"エラーが発生しました: {e}")
+    while True:
+        try:
+            file_path, header = prepare_upload()
 
-except KeyboardInterrupt:
-    print("アプリを終了します。")
+            run_tcp_client(
+                file_path=file_path,
+                header=header
+            )
 
+        except ConnectionRefusedError:
+            print("サーバーに接続できませんでした。")
+
+        except ConnectionError as e:
+            print(f"通信エラー: {e}")
+
+        except OSError as e:
+            print(f"エラーが発生しました: {e}")
+
+        except KeyboardInterrupt:
+            print("アプリを終了します。")
+            break
+
+
+if __name__ == "__main__":
+    main()
