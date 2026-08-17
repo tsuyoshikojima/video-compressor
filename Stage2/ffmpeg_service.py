@@ -30,3 +30,20 @@ def run_ffmpeg(
     if not output_path.is_file():
         raise RuntimeError("出力ファイルが生成されませんでした。")
 
+
+def compress_video(
+        input_path: Path,
+        output_path: Path
+) -> None:
+
+    ffmpeg_args = [
+        "-c:v", "libx264",      # codec:動画をどの方式で圧縮するか
+        "-crf", "23",           # CRF:画質とファイルサイズのバランス
+        "-preset", "medium"     # preset:圧縮処理にどれくらいの時間を使って効率よく圧縮するか
+    ]
+
+    run_ffmpeg(
+        input_path=input_path,
+        output_path=output_path,
+        ffmpeg_args=ffmpeg_args
+    )
