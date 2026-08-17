@@ -37,7 +37,7 @@ def compress_video(
 ) -> None:
 
     ffmpeg_args = [
-        "-c:v", "libx264",      # codec:動画をどの方式で圧縮するか
+        "-c:v", "libx264",      # codec video:動画をどの方式で圧縮するか
         "-crf", "23",           # CRF:画質とファイルサイズのバランス
         "-preset", "medium"     # preset:圧縮処理にどれくらいの時間を使って効率よく圧縮するか
     ]
@@ -47,3 +47,27 @@ def compress_video(
         output_path=output_path,
         ffmpeg_args=ffmpeg_args
     )
+
+
+def resize_video(
+        input_path: Path,
+        output_path: Path,
+        width: int,
+        height: int
+) -> None:
+
+    if width <= 0 or height <= 0:
+        raise ValueError("widthとheightは1以上である必要があります。")
+
+    ffmpeg_args = [
+        "-vf", f"scale={width}:{height}",   # video filter: 解像度の変更
+        "-c:v", "libx264",
+        "-c:a", "copy"  # 音声はそのままコピー
+    ]
+
+    run_ffmpeg(
+        input_path=input_path,
+        output_path=output_path,
+        ffmpeg_args=ffmpeg_args
+    )
+
