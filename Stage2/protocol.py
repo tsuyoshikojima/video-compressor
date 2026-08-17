@@ -52,7 +52,7 @@ def decode_header(header: bytes) -> tuple[int, int, int]:
 
     media_type_size = header[2]
 
-    if 0 <= media_type_size <= MAX_MEDIA_TYPE_SIZE:
+    if not 0 <= media_type_size <= MAX_MEDIA_TYPE_SIZE:
         # 1バイトは0〜255の数字を表現可能だがプロトコルの仕様上0〜4に制限する
         raise ValueError("メディアタイプのサイズが不正です。")
 
