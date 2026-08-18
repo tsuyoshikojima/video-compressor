@@ -160,3 +160,47 @@ def extract_audio(
         ffmpeg_args=ffmpeg_args
     )
 
+def create_clip(
+        input_path: Path,
+        output_path: Path,
+        start_time: float,
+        end_time: float,
+        output_format: str
+) -> None:
+
+    if start_time < 0:
+        raise ValueError("開始時間は0以上である必要があります。")
+
+    if end_time <= start_time:
+        raise ValueError("終了時間は開始時間より後にしてください。")
+
+    duration = end_time - start_time
+
+    output_format = output_format.lower()
+
+    if output_format not in {"gif", "webm"}:
+        raise ValueError("出力形式はgifまたはwebmを選んでください。")
+
+    if output_path.suffix.lower() != f".{output_format}":
+        raise ValueError("出力形式と出力ファイルの拡張子が一致していません。")
+
+    if output_format == "gif":
+        ffmpeg_args = [
+            "-ss", str(start_time),     # 開始位置
+            "-t", str(duration),        # 開始位置から何秒間切り出すか
+            "-an"                       # audio none
+        ]
+    else:
+        ffmpeg_args = [
+            "-ss", str(start_time),
+            "-t", str(duration),
+            "-c:v", "libvpx-vp9",
+            "-c:a", "libopus"
+        ]
+
+
+    run_ffmpeg(
+        input_path=input_path,
+        output_path=output_path,
+        ffmpeg_args=ffmpeg_args
+    )
