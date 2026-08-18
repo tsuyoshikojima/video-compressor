@@ -142,3 +142,21 @@ def change_aspect_ratio(
         output_path=output_path,
         ffmpeg_args=ffmpeg_args
     )
+
+
+def extract_audio(
+        input_path: Path,
+        output_path: Path
+) -> None:
+
+    ffmpeg_args = [
+        "-vn",      # video none
+        "-c:a", "libmp3lame"    # 音声をMP3形式でエンコード
+    ]
+
+    run_ffmpeg(
+        input_path=input_path,
+        output_path=output_path,
+        ffmpeg_args=ffmpeg_args
+    )
+
