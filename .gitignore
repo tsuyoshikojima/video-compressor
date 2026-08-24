@@ -1,3 +1,6 @@
 __pycache__/
 *.mp4
-stage1/uploads/
+Stage1/uploads/
+Stage2/uploads/
+Stage2/outputs/
+Stage2/downloads/
