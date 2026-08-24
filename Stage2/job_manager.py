@@ -76,7 +76,6 @@ class JobManager:
         job.error = error
 
     def remove_job(self, job_id: str) -> None:
-
         job = self.get_job(job_id)
 
         if job is None:
@@ -91,13 +90,3 @@ class JobManager:
                 return True
 
         return False
-
-manager = JobManager()
-
-job = manager.create_job(
-    client_ip="127.0.0.1",
-    operation="compress",
-    input_path=Path("input.mp4"),
-    output_path=Path("output.mp4"),
-    params={}
-)

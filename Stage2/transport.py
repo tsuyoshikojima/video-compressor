@@ -17,9 +17,6 @@ from protocol import (
 
 CHUNK_SIZE = 1400
 
-UPLOAD_DIR = Path(__file__).parent / "uploads"
-UPLOAD_DIR.mkdir(exist_ok=True)
-
 
 def recv_exact(
         connection: socket.socket,
@@ -45,7 +42,10 @@ def recv_exact(
     return bytes(received_data)
 
 
-def recv_mmp_message(connection: socket.socket) -> tuple[dict, str | None, Path | None]:
+def recv_mmp_message(
+        connection: socket.socket,
+        save_dir: Path
+) -> tuple[dict, str | None, Path | None]:
 
     header_bytes = recv_exact(
         connection=connection,
@@ -77,8 +77,8 @@ def recv_mmp_message(connection: socket.socket) -> tuple[dict, str | None, Path 
     remaining_size = payload_size
 
     file_id = uuid.uuid4().hex
-    temp_path = UPLOAD_DIR / f"{file_id}.temp"
-    saved_path = UPLOAD_DIR / f"{file_id}.{media_type}"
+    temp_path = save_dir / f"{file_id}.temp"
+    saved_path = save_dir / f"{file_id}.{media_type}"
 
     try:
         with open(temp_path, "wb") as f:
