@@ -173,10 +173,10 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
         save_dir=DOWNLOAD_DIR
     )
 
-    if received_json_data["status"] == "completed":
+    if received_json_data["status"] == "processing":
         print(
-            "動画処理が完了しました。\n"
-            f"保存先: {saved_path}"
+            "動画処理中です。しばらくお待ちください。\n"
+            f"ID:{received_json_data.get("job_id")}"
         )
     elif received_json_data["status"] == "failed":
         print(
