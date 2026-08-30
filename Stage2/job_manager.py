@@ -1,3 +1,4 @@
+import threading
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -19,6 +20,7 @@ class Job:
 class JobManager:
     def __init__(self) -> None:
         self._jobs: dict[str, Job] = {}
+        self._lock = threading.Lock()   # 複数スレッドがself._jobsにアクセスするためスレッドセーフにする
 
     def create_job(
             self,
@@ -41,12 +43,14 @@ class JobManager:
             params=params,
         )
 
-        self._jobs[job_id] = job
+        with self._lock:
+            self._jobs[job_id] = job
 
         return job
 
     def get_job(self, job_id: str) -> Job | None:
-        return self._jobs.get(job_id)
+        with self._lock:
+            return self._jobs.get(job_id)
 
     def update_status(
             self,
@@ -54,12 +58,13 @@ class JobManager:
             status: str
     ) -> None:
 
-        job = self.get_job(job_id)
+        with self._lock:
+            job = self._jobs.get(job_id)
 
-        if job is None:
-            raise ValueError("指定されたJobが存在しません。")
+            if job is None:
+                raise ValueError("指定されたJobが存在しません。")
 
-        job.status = status
+            job.status = status
 
     def fail_job(
             self, 
@@ -67,26 +72,30 @@ class JobManager:
             error: str
     ) -> None:
 
-        job = self.get_job(job_id)
+        with self._lock:
+            job = self._jobs.get(job_id)
 
-        if job is None:
-            raise ValueError("指定されたJobが存在しません。")
+            if job is None:
+                raise ValueError("指定されたJobが存在しません。")
 
-        job.status = "failed"
-        job.error = error
+            job.status = "failed"
+            job.error = error
 
     def remove_job(self, job_id: str) -> None:
-        job = self.get_job(job_id)
 
-        if job is None:
-            raise ValueError("指定されたJobが存在しません。")
+        with self._lock:
+            job = self._jobs.get(job_id)
 
-        del self._jobs[job_id]
+            if job is None:
+                raise ValueError("指定されたJobが存在しません。")
+
+            del self._jobs[job_id]
 
     def has_active_job(self, client_ip: str) -> bool:
 
-        for job in self._jobs.values():
-            if job.client_ip == client_ip and job.status == "processing":
-                return True
+        with self._lock:
+            for job in self._jobs.values():
+                if job.client_ip == client_ip and job.status == "processing":
+                    return True
 
         return False
