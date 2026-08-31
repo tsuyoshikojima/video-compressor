@@ -1,4 +1,5 @@
 import socket
+import time
 
 from pathlib import Path
 
@@ -13,6 +14,61 @@ SERVER_ADDRESS = ("127.0.0.1", 9001)
 
 DOWNLOAD_DIR = Path(__file__).parent / "downloads"
 DOWNLOAD_DIR.mkdir(exist_ok=True)
+
+
+def check_job_status(job_id: str) -> tuple[dict, Path | None]:
+    """動画の処理状況をサーバーに確認する"""
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
+        client_socket.connect(SERVER_ADDRESS)
+
+        request = {
+            "operation" : "check_status",
+            "job_id" : job_id
+        }
+
+        send_mmp_message(
+            connection=client_socket,
+            json_data=request,
+            media_type=None,
+            payload=None
+        )
+
+        json_data, _, saved_path = recv_mmp_message(
+            connection=client_socket,
+            save_dir=DOWNLOAD_DIR
+        )
+
+        return json_data, saved_path
+
+
+def poll_job(job_id: str) -> None:
+
+    while True:
+        time.sleep(60)
+
+        json_data, saved_path = check_job_status(job_id)
+
+        status = json_data["status"]
+
+        if status == "completed":
+            print(
+                "動画処理が完了しました。\n"
+                f"保存場所: {saved_path}\n"
+            )     
+            break
+        elif status == "processing":
+            print("動画を処理中です。しばらくお待ちください。\n")
+        elif status == "failed":
+            print(
+                "動画処理に失敗しました。\n"
+                f"原因:{json_data['description']}\n"
+                f"解決方法:{json_data['solution']}\n"
+            )
+            break
+        else:
+            raise ValueError(f"不明なJOBステータスです:{status}")
+
 
 while True:
     file_path = Path(
@@ -130,7 +186,7 @@ while True:
                 "・gif\n"
                 "・webm\n"
                 "> "
-            )
+            ).strip().lower()
 
             if output_format not in {"gif", "webm"}:
                 print("対応していない出力形式です。\n")
@@ -149,7 +205,7 @@ while True:
 
     break
 
-
+job_id: str | None = None
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
     client_socket.connect(SERVER_ADDRESS)
@@ -168,18 +224,25 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
         payload=file_path
     )
 
-    received_json_data, received_media_type, saved_path = recv_mmp_message(
+    received_json_data, _, _ = recv_mmp_message(
         connection=client_socket,
         save_dir=DOWNLOAD_DIR
     )
 
     if received_json_data["status"] == "processing":
+        job_id = received_json_data["job_id"]
+
         print(
-            "動画処理中です。しばらくお待ちください。\n"
-            f"ID:{received_json_data.get("job_id")}"
+            "動画処理を開始します。\n"
+            f"ID:{job_id}\n"
         )
+
     elif received_json_data["status"] == "failed":
         print(
             "動画処理に失敗しました。\n"
-            f"解決方法: {received_json_data['solution']}"
+            f"エラー内容:{received_json_data['description']}\n"
+            f"解決方法: {received_json_data['solution']}\n"
         )
+
+if job_id is not None:
+    poll_job(job_id)

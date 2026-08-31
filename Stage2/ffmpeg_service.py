@@ -60,6 +60,9 @@ def resize_video(
     if width <= 0 or height <= 0:
         raise ValueError("widthとheightは1以上である必要があります。")
 
+    if width % 2 != 0 or height % 2 != 0:
+        raise ValueError("widthとheightは偶数を指定してください。")
+
     ffmpeg_args = [
         "-vf", f"scale={width}:{height}",   # video filter: 解像度の変更
         "-c:v", "libx264",
