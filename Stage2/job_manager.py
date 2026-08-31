@@ -1,6 +1,6 @@
 import threading
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
@@ -50,7 +50,12 @@ class JobManager:
 
     def get_job(self, job_id: str) -> Job | None:
         with self._lock:
-            return self._jobs.get(job_id)
+            job = self._jobs.get(job_id)
+
+            if job is None:
+                return None
+
+            return replace(job)  # job取得時のスナップショットを返す。
 
     def update_status(
             self,
