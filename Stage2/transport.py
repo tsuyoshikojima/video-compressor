@@ -15,6 +15,12 @@ from protocol import (
 )
 
 
+from storage import (
+    check_storage_capacity,
+    StorageLimitError
+)
+
+
 CHUNK_SIZE = 1400
 
 
@@ -44,7 +50,8 @@ def recv_exact(
 
 def recv_mmp_message(
         connection: socket.socket,
-        save_dir: Path
+        save_dir: Path,
+        storage_dirs: list[Path] | None = None
 ) -> tuple[dict, str | None, Path | None]:
 
     header_bytes = recv_exact(
@@ -71,6 +78,25 @@ def recv_mmp_message(
         connection=connection,
         data_size=media_type_size
     )
+
+    if storage_dirs is not None:
+        try:
+            check_storage_capacity(
+                directories=storage_dirs,
+                incoming_size=payload_size
+            )
+        except StorageLimitError:
+            remaining_size = payload_size
+
+            while remaining_size > 0:
+                chunk = connection.recv(min(remaining_size, CHUNK_SIZE))
+
+                if not chunk:
+                    raise ConnectionError("データ受信中に切断されました。")
+
+                remaining_size -= len(chunk)
+
+            raise
 
     media_type = decode_media_type(media_type_bytes)
 
