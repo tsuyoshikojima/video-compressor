@@ -17,8 +17,12 @@ from job_manager import(
 
 from request_processor import(
     create_output_path,
-    process_job
+    process_job,
+    OUTPUT_DIR
 )
+
+
+from storage import StorageLimitError
 
 
 SERVER_PORT = 9001
@@ -45,8 +49,29 @@ try:
                 try:
                     json_data, media_type, saved_path = recv_mmp_message(
                         connection=connection,
-                        save_dir=SERVER_UPLOAD_DIR
+                        save_dir=SERVER_UPLOAD_DIR,
+                        storage_dirs=[SERVER_UPLOAD_DIR, OUTPUT_DIR]
                     )
+
+                except StorageLimitError as error:
+                    print("サーバーの容量を超過するためデータを受信できませんでした。")
+
+                    response = {
+                        "status" : "failed",
+                        "error_code" : "STORAGE_LIMIT_EXCEEDED",
+                        "description" : str(error),
+                        "solution" : "しばらく時間を空けてから再度実行してください。"
+                    }
+
+                    send_mmp_message(
+                        connection=connection,
+                        json_data=response,
+                        media_type=None,
+                        payload=None
+                    )
+
+                    continue
+
                 except (ConnectionError, ValueError) as error:
                     print(f"MMPメッセージの受信に失敗しました。:{error}")
                     continue
